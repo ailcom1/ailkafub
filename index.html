@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"> <!-- disable zoom -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>تطبيق العد التنازلي</title>
     <style>
         body { 
@@ -18,7 +17,7 @@
             margin: 0; 
             padding: 20px; 
             text-align: center; 
-            touch-action: pan-y; /* Allow vertical scrolling only */
+            touch-action: pan-y; 
         }
         .box { 
             background: rgba(62, 1, 71, .8); 
@@ -38,15 +37,6 @@
             margin: 20px; 
             border-radius: 50%; 
             border: 8px solid #ffbf00; 
-        }
-        .water { 
-            position: absolute; 
-            bottom: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 0; 
-            background: rgba(255, 0, 85, 0.4); 
-            transition: height 9s linear; 
         }
         #countdown { 
             font-size: 2.5em; 
@@ -84,7 +74,7 @@
             width: 80%; 
             max-width: 400px; 
             margin-top: 10px; 
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); 
+            box-shadow: 0 4px 10px rgba(0, 0, 0, .5); 
         }
         .news-ticker p { 
             display: inline-block; 
@@ -102,12 +92,11 @@
     <div class="box">الدولارات: <span id="dollars">0</span></div>
     <div class="box">المجوهرات: <span id="jewels">0</span> النقاط: <span id="points">0</span></div>
     <div class="circle">
-        <div class="water" id="water"></div>
-        <p id="countdown">00:09</p>
+        <p id="countdown">00:00:00</p> <!-- العد التنازلي -->
     </div>
     <button id="startButton">بدء العد</button>
     <div class="news-ticker">
-        <p>مرحبا بك في تطبيق العد التنازلي! استمتع بوقتك هنا.</p>
+        <p>اهلا وسهلا بكم في تطبيق دولار اتمنى لكم تجربه ممتعه </p>
     </div>
     <div class="box" style="margin-top: 30px;"> 
         <button onclick="alert('الصفحة الرئيسية')">الرئيسية</button>
@@ -118,53 +107,39 @@
         <label for="activationCode">أدخل كود التفعيل:</label>
         <input type="text" id="activationCode" maxlength="4" style="padding: 10px; margin-top: 10px; border-radius: 5px; border: 1px solid #ffbf00; width: calc(100% - 20px);"/>
         <button id="submitCode" style="margin-top: 10px;">تقديم الكود</button>
-        <div id="error-message" style="color: red; margin-top: 10px; display: none;"></div> <!-- مكان ظهور رسالة الخطأ -->
+        <div id="error-message" style="color: red; margin-top: 10px; display: none;"></div>
     </div>
     
     <script>
-        const activationCode = "LKER", codeExpiryDays = 2;
-        let points = parseInt(localStorage.getItem('points')) || 0, 
-            jewels = parseInt(localStorage.getItem('jewels')) || 0, 
-            countdownSeconds = parseInt(localStorage.getItem('countdownSeconds')) || 9, 
-            isRunning = false;
+        const activationCode = "LKER", countdownDuration = 86400; // 24 ساعة بالثواني
+        let points = parseInt(localStorage.getItem('points')) || 0,
+            jewels = parseInt(localStorage.getItem('jewels')) || 0,
+            codeTimestamp = parseInt(localStorage.getItem('codeTimestamp')) || 0,
+            countdownInterval;
 
         document.getElementById("points").textContent = points; 
         document.getElementById("jewels").textContent = jewels; 
         document.getElementById("dollars").textContent = Math.floor(points / 5000);
-        
-        const isCodeValid = () => {
-            const codeTimestamp = localStorage.getItem('codeTimestamp');
-            return codeTimestamp && Date.now() < new Date(parseInt(codeTimestamp) + codeExpiryDays * 86400000);
-        };
 
-        const updateDisplay = () => {
-            document.getElementById("countdown").textContent = `00:${countdownSeconds.toString().padStart(2, "0")}`;
-            document.getElementById("water").style.height = `${(countdownSeconds / 9) * 100}%`;
+        const updateCountdownDisplay = (seconds) => {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const remainingSeconds = seconds % 60;
+            document.getElementById("countdown").textContent = 
+                `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
         };
 
         const startCountdown = () => {
-            if (isRunning) return;
-            isRunning = true; 
-            document.getElementById("startButton").disabled = true; 
-            updateDisplay();
-            const countdown = setInterval(() => {
-                countdownSeconds--;
-                localStorage.setItem('countdownSeconds', countdownSeconds);
-                updateDisplay();
-                if (countdownSeconds <= 0) {
-                    clearInterval(countdown);
-                    points += 100; jewels += 100;
-                    localStorage.setItem('points', points); 
-                    localStorage.setItem('jewels', jewels);
-                    document.getElementById("points").textContent = points; 
-                    document.getElementById("jewels").textContent = jewels;
-                    document.getElementById("dollars").textContent = Math.floor(points / 5000);
-                    alert("العد التنازلي انتهى، تم إضافة النقاط والمجوهرات.");
-                    countdownSeconds = 9; 
-                    localStorage.setItem('countdownSeconds', countdownSeconds);
-                    isRunning = false; 
-                    document.getElementById("startButton").disabled = false; 
-                    document.getElementById("water").style.height = '0'; 
+            let remainingTime = countdownDuration;
+
+            countdownInterval = setInterval(() => {
+                remainingTime--;
+                updateCountdownDisplay(remainingTime);
+
+                if (remainingTime <= 0) {
+                    clearInterval(countdownInterval);
+                    document.getElementById("countdown").textContent = "00:00:00"; // إعادة ضبط العرض
+                    alert("انتهى العد التنازلي!"); // إشعار انتهاء العد
                 }
             }, 1000);
         };
@@ -176,8 +151,7 @@
             if (enteredCode === activationCode) {
                 localStorage.setItem('codeTimestamp', Date.now());
                 document.getElementById("codeInput").style.display = "none";
-                alert("الكود صالح! يمكنك الآن البدء في الحصول على النقاط والجواهر.");
-                startCountdown();
+                startCountdown(); // بدء العد التنازلي عند إدخال الكود الصحيح
             } else {
                 errorMessage.textContent = "كود خاطئ، يرجى المحاولة مرة أخرى.";
                 errorMessage.style.display = "block"; // إظهار رسالة الخطأ
@@ -187,47 +161,15 @@
         document.getElementById("submitCode").onclick = handleActivationCode;
 
         document.getElementById("startButton").onclick = () => {
-            if (!isCodeValid()) {
-                document.getElementById("codeInput").style.display = "block"; 
+            if (Date.now() > codeTimestamp + (3 * 86400000)) {
+                document.getElementById("codeInput").style.display = "block"; // إظهار حقل الكود إذا انتهت صلاحية الكود
             } else {
-                startCountdown();
+                startCountdown(); // بدء العد التنازلي إذا كان الكود صالح
             }
         };
 
-        // وظيفة لزيادة النقاط والجواهر تلقائيًا كل 24 ساعة
-        const autoReward = () => {
-            const lastRewardTime = localStorage.getItem('lastRewardTime');
-            const now = Date.now();
-            const oneDay = 24 * 60 * 60 * 1000; // 24 ساعة بالمللي ثانية
-
-            if (!lastRewardTime || now - lastRewardTime >= oneDay) {
-                points += 100;
-                jewels += 100;
-                localStorage.setItem('points', points);
-                localStorage.setItem('jewels', jewels);
-                localStorage.setItem('lastRewardTime', now);
-                document.getElementById("points").textContent = points; 
-                document.getElementById("jewels").textContent = jewels; 
-                document.getElementById("dollars").textContent = Math.floor(points / 5000);
-                alert("لقد حصلت على 100 نقطة و100 جوهرة!");
-            }
-        };
-
-        // استدعاء الوظيفة عند تحميل الصفحة
-        window.onload = () => {
-            if (countdownSeconds > 0) {
-                updateDisplay(); 
-            } else {
-                updateDisplay();
-            }
-            autoReward(); // تحقق من الجوائز التلقائية عند التحميل
-        };
-
-        // تحديث العرض كل ثانية للتأكد من العد التنازلي مستمر
-        setInterval(() => {
-            if (isRunning) {
-                autoReward(); // تحقق من الجوائز التلقائية كل ثانية
-            }
-        }, 1000);
+        // تحديث العرض عند التحميل
+        updateCountdownDisplay(countdownDuration); // بدء العد كزينة
     </script>
-</body> 
+</body>
+</html>
